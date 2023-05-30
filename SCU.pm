@@ -1,20 +1,20 @@
-# Copyright (C)  Edgar Gonzàlez i Pellicer
-#                Maria Fuentes Fort
+# Copyright (C) 2005  Edgar GonzÃ lez i Pellicer
+#                     Maria Fuentes Fort
 #
 # This file is part of AutoPan
-#  
+#
 # AutoPan is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software 
+# along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 use strict;
@@ -31,53 +31,52 @@ sub new {
 
     # Process the string
     my $labelWords = processString($label, $options);
-    
+
     # Contributors
     my @contributors = ();
-    
+
     # Process the children
     shift(@{$subtree});
     while (@{$subtree}) {
-	my $tag   = shift(@{$subtree});
-	my $child = shift(@{$subtree});
-	
-	if ($tag eq 'contributor') {
-	    # Find the contributor words
-	    my $words = processString($child->[0]{'label'}, $options);
-	    push(@contributors, [ $words, $child->[0]{'label'} ])
-		if @{$words} >= $options->{'mincontri'};
-	}
+        my $tag   = shift(@{$subtree});
+        my $child = shift(@{$subtree});
+
+        if ($tag eq 'contributor') {
+            # Find the contributor words
+            my $words = processString($child->[0]{'label'}, $options);
+            push(@contributors, [ $words, $child->[0]{'label'} ])
+                if @{$words} >= $options->{'mincontri'};
+        }
     }
 
     # Return the object
     return bless([ $uid, $label, $labelWords, \@contributors ], $class);
 }
 
-
 # Process the string
 sub processString {
     my ($string, $options) = @_;
-    
+
     # Tokenize
     my @words = $options->{'tokenizer'}->tokenizeString($string);
-    
+
     # Lower case and stem
     if ($options->{'stem'}) {
-	@words = map { $options->{'stemmer'}->stem($_) } @words;
-	
+        @words = map { $options->{'stemmer'}->stem($_) } @words;
+
     } elsif ($options->{'lower'}) {
-	@words = map { lc($_) } @words;
-	if ($options->{'stop'}) {
-	    @words = grep { !$options->{'stemmer'}->isStopWord($_) } @words;
-	} else {
-	    @words = grep { !$options->{'stemmer'}->isNonWord($_) } @words;
-	}
+        @words = map { lc($_) } @words;
+        if ($options->{'stop'}) {
+            @words = grep { !$options->{'stemmer'}->isStopWord($_) } @words;
+        } else {
+            @words = grep { !$options->{'stemmer'}->isNonWord($_) } @words;
+        }
 
     } elsif ($options->{'stop'}) {
-	@words = grep { !$options->{'stemmer'}->isStopWord(lc($_)) } @words;
+        @words = grep { !$options->{'stemmer'}->isStopWord(lc($_)) } @words;
 
     } else {
-	@words = grep { !$options->{'stemmer'}->isNonWord($_) } @words;
+        @words = grep { !$options->{'stemmer'}->isNonWord($_) } @words;
     }
 
     # Filter the words
@@ -87,23 +86,21 @@ sub processString {
     return \@words;
 }
 
-
 # Remove repeated elements
 sub removeRepeated {
     my @elements = sort(@_);
-    
-    my $i = 1; 
+
+    my $i = 1;
     while ($i < @elements) {
-	if ($elements[$i] eq $elements[$i - 1]) {
-	    splice(@elements, $i, 1);
-	} else {
-	    ++$i;
-	}
+        if ($elements[$i] eq $elements[$i - 1]) {
+            splice(@elements, $i, 1);
+        } else {
+            ++$i;
+        }
     }
-    
+
     return @elements;
 }
-
 
 # Get the overlap with a section
 # (represented as a hash)
@@ -113,28 +110,28 @@ sub getLeftmostOverlap {
     # Overlap with the label
     my $label = $this->getLabelWords();
     my ($maxOverlap, $maxLeftMost) =
-	_getLeftmostOverlap($label, $sectionHash);
+        _getLeftmostOverlap($label, $sectionHash);
     my $maxContribText = $this->getLabel();
 
     # If no use contributors, return this
     return ($maxOverlap, $maxLeftMost, $maxContribText)
-	if !$useContributors;
-    
+        if !$useContributors;
+
     # Overlap with each contributor
     my $maxContributorText;
     foreach my $contrib ($this->getContributors()) {
-	my ($overlap, $leftMost) =
-	    _getLeftmostOverlap($contrib->[0], $sectionHash);
-	if ($overlap > $maxOverlap) {
-	    $maxOverlap     = $overlap;
-	    $maxLeftMost    = $leftMost;
-	    $maxContribText = $contrib->[1];
+        my ($overlap, $leftMost) =
+            _getLeftmostOverlap($contrib->[0], $sectionHash);
+        if ($overlap > $maxOverlap) {
+            $maxOverlap     = $overlap;
+            $maxLeftMost    = $leftMost;
+            $maxContribText = $contrib->[1];
 
-	} elsif ($overlap == $maxOverlap &&
-		 $leftMost < $maxLeftMost) {
-	    $maxLeftMost    = $leftMost;
-	    $maxContribText = $contrib->[1];
-	}
+        } elsif ($overlap == $maxOverlap &&
+                 $leftMost < $maxLeftMost) {
+            $maxLeftMost    = $leftMost;
+            $maxContribText = $contrib->[1];
+        }
     }
 
     # Return the best of the best
@@ -144,19 +141,19 @@ sub getLeftmostOverlap {
 # Auxiliary overlap function
 sub _getLeftmostOverlap {
     my ($reference, $sectionHash) = @_;
-    
+
     my $overlap  = 0;
     my $leftMost = 1000;
-    
+
     foreach my $elem (@{$reference}) {
-	if (exists($sectionHash->{$elem})) {
-	    ++$overlap;
-	    if ($sectionHash->{$elem} < $leftMost) {
-		$leftMost = $sectionHash->{$elem};
-	    }
-	}
+        if (exists($sectionHash->{$elem})) {
+            ++$overlap;
+            if ($sectionHash->{$elem} < $leftMost) {
+                $leftMost = $sectionHash->{$elem};
+            }
+        }
     }
-    
+
     # Return relative overlap
     return ($overlap / @{$reference}, $leftMost);
 }

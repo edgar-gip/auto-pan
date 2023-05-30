@@ -1,21 +1,21 @@
-# Copyright (C)  Martin Porter
-#                Edgar Gonzàlez i Pellicer
-#                Maria Fuentes Fort
+# Copyright (C) 2005  Martin Porter
+#                     Edgar GonzÃ lez i Pellicer
+#                     Maria Fuentes Fort
 #
 # This file is part of AutoPan
-#  
+#
 # AutoPan is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software 
+# along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 # Porter Stemmer
@@ -27,11 +27,10 @@ use strict;
 
 use IO::File;
 
-
 package Porter;
 
 use vars qw( %step2list %step3list
-	     $c $v $C $V $mgr0 $meq1 $mgr1 $_v );
+             $c $v $C $V $mgr0 $meq1 $mgr1 $_v );
 
 # Static vars
 %step2list =
@@ -44,9 +43,8 @@ use vars qw( %step2list %step3list
       'iviti'=>'ive', 'biliti'=>'ble', 'logi'=>'log');
 
 %step3list =
-    ('icate'=>'ic', 'ative'=>'', 'alize'=>'al', 
+    ('icate'=>'ic', 'ative'=>'', 'alize'=>'al',
      'iciti'=>'ic', 'ical'=>'ic', 'ful'=>'', 'ness'=>'');
-
 
 $c = qr/[^aeiou]/;          # consonant
 $v = qr/[aeiouy]/;          # vowel
@@ -58,7 +56,6 @@ $meq1 = qr/^(${C})?${V}${C}(${V})?$/; # [C]VC[V] is m=1
 $mgr1 = qr/^(${C})?${V}${C}${V}${C}/; # [C]VCVC... is m>1
 $_v   = qr/^(${C})?${v}/;             # vowel in stem
 
-
 # Constructor
 sub new {
     my ($class, $stopWordFile) = @_;
@@ -68,21 +65,20 @@ sub new {
 
     # Load it
     if ($stopWordFile) {
-	my $fin = new IO::File("< $stopWordFile")
-	    or die "Can't Open Stop Word File $stopWordFile\n";
-	
-	my $line;
-	while ($line = $fin->getline()) {
-	    chomp($line);
-	    $stopList->{lc($line)} = 1 if $line;
-	}
-	$fin->close();
+        my $fin = new IO::File("< $stopWordFile")
+            or die "Can't Open Stop Word File $stopWordFile\n";
+
+        my $line;
+        while ($line = $fin->getline()) {
+            chomp($line);
+            $stopList->{lc($line)} = 1 if $line;
+        }
+        $fin->close();
     }
-    
+
     # Add the cache part and bless
     return bless([ $stopList, {}], $class);
 }
-
 
 # Stem
 sub stem {
@@ -103,7 +99,7 @@ sub stem {
 
     # Look in the cache
     return $this->[1]{$w} if exists($this->[1]{$w});
-    
+
     # Save starting $w
     my $initw = $w;
 
@@ -117,16 +113,16 @@ sub stem {
     # Step 1a
     if ($w =~ /(ss|i)es$/) { $w=$`.$1; }
     elsif ($w =~ /([^s])s$/) { $w=$`.$1; }
- 
-   # Step 1b
+
+    # Step 1b
     if ($w =~ /eed$/) { if ($` =~ /$mgr0/o) { chop($w); } }
-    elsif ($w =~ /(ed|ing)$/) { 
-	$stem = $`;
-	if ($stem =~ /$_v/o) {
-	    $w = $stem;
-	    if ($w =~ /(at|bl|iz)$/) { $w .= "e"; }
-	    elsif ($w =~ /([^aeiouylsz])\1$/) { chop($w); }
-	    elsif ($w =~ /^${C}${v}[^aeiouwxy]$/o) { $w .= "e"; }
+    elsif ($w =~ /(ed|ing)$/) {
+        $stem = $`;
+        if ($stem =~ /$_v/o) {
+            $w = $stem;
+            if ($w =~ /(at|bl|iz)$/) { $w .= "e"; }
+            elsif ($w =~ /([^aeiouylsz])\1$/) { chop($w); }
+            elsif ($w =~ /^${C}${v}[^aeiouwxy]$/o) { $w .= "e"; }
         }
     }
 
@@ -155,7 +151,6 @@ sub stem {
         if ($stem =~ /$mgr1/o) { $w = $stem; }
     }
 
-
     #  Step 5
     if ($w =~ /e$/) {
         $stem = $`;
@@ -174,15 +169,12 @@ sub stem {
     return $w;
 }
 
-
 # Is a stop word
 sub isStopWord {
     my ($this, $w) = @_;
 
     return ($w =~ /^\W+$/ || $this->[0]{$w});
 }
-
-
 
 # Is a non word
 sub isNonWord {
@@ -191,7 +183,5 @@ sub isNonWord {
     return $w =~ /^\W+$/;
 }
 
-
 # Return true
 1;
-
